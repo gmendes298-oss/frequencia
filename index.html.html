@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Controle de Frequência e Pagamentos</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1a2e;
+      --card2:#0c1527;
+      --text:#e8eefc;
+      --muted:#a9b6d3;
+      --line:rgba(255,255,255,.08);
+      --primary:#4f8cff;
+      --primary2:#2f6fff;
+      --danger:#ff4f6d;
+      --warn:#ffcc66;
+      --ok:#49d88b;
+      --shadow: 0 12px 30px rgba(0,0,0,.25);
+      --radius: 16px;
+      --radius2: 22px;
+      --pad: 14px;
+      --pad2: 18px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 30% -10%, rgba(79,140,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(73,216,139,.16), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      font-family:var(--font);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    .wrap{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px 14px 90px;
+    }
+    header{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin: 8px 0 14px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:6px;
+    }
+    .brand h1{
+      margin:0;
+      font-size: 18px;
+      font-weight: 750;
+      letter-spacing:.2px;
+    }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size: 12.5px;
+      line-height:1.3;
+    }
+    .chipbar{
+      display:flex; gap:10px; flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .chip{
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--line);
+      padding: 8px 10px;
+      border-radius: 999px;
+      display:flex; gap:8px; align-items:center;
+      box-shadow: 0 10px 18px rgba(0,0,0,.12);
+      min-height: 38px;
+    }
+    .chip b{ font-size:12px; }
+    .chip span{ font-size:12px; color:var(--muted); }
+    .grid{
+      display:grid;
+      gap:14px;
+    }
+    @media (min-width: 960px){
+      .grid{ grid-template-columns: 1fr 1fr; }
+      .span2{ grid-column: 1 / -1; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid var(--line);
+      border-radius: var(--radius2);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .head{
+      padding: 16px 16px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.10);
+    }
+    .card .head h2{
+      margin:0;
+      font-size: 14px;
+      font-weight: 740;
+      letter-spacing:.2px;
+    }
+    .card .head small{
+      color:var(--muted);
+      font-size: 12px;
+    }
+    .card .body{
+      padding: 14px 16px 16px;
+    }
+    .row{
+      display:grid;
+      gap:10px;
+    }
+    @media (min-width: 560px){
+      .row.cols2{ grid-template-columns: 1fr 1fr; }
+      .row.cols3{ grid-template-columns: 1fr 1fr 1fr; }
+    }
+    label{
+      font-size: 12px;
+      color: var(--muted);
+      display:block;
+      margin: 0 0 6px;
+    }
+    input, select, textarea{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+    input::placeholder, textarea::placeholder{ color: rgba(233,240,255,.35); }
+    textarea{ min-height: 92px; resize: vertical; }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(79,140,255,.55);
+      box-shadow: 0 0 0 3px rgba(79,140,255,.15);
+    }
+    .btns{
+      display:flex; gap:10px; flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .btn{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor:pointer;
+      min-height: 44px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      flex: 1 1 160px;
+      transition: transform .05s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(79,140,255,.95), rgba(47,111,255,.95));
+      border-color: rgba(79,140,255,.65);
+    }
+    .btn.danger{
+      background: linear-gradient(180deg, rgba(255,79,109,.95), rgba(220,54,83,.95));
+      border-color: rgba(255,79,109,.65);
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+    .hint{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .seg{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .seg button{
+      flex: 1 1 140px;
+      min-height: 44px;
+      border-radius: 16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font-weight: 800;
+      cursor:pointer;
+    }
+    .seg button.active{
+      border-color: rgba(79,140,255,.7);
+      background: rgba(79,140,255,.18);
+      box-shadow: 0 0 0 3px rgba(79,140,255,.12);
+    }
+    .tableWrap{
+      overflow:auto;
+      border-radius: 16px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      min-width: 860px;
+    }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      font-size: 13px;
+      text-align:left;
+      white-space:nowrap;
+    }
+    th{
+      position: sticky;
+      top: 0;
+      background: rgba(13,24,44,.95);
+      z-index: 2;
+      color: rgba(233,240,255,.9);
+      font-weight: 800;
+      font-size: 12px;
+      letter-spacing:.2px;
+    }
+    tr:hover td{ background: rgba(255,255,255,.03); }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .pill.ok{ border-color: rgba(73,216,139,.45); background: rgba(73,216,139,.10); }
+    .pill.bad{ border-color: rgba(255,79,109,.45); background: rgba(255,79,109,.10); }
+    .pill.warn{ border-color: rgba(255,204,102,.45); background: rgba(255,204,102,.10); }
+    .footerBar{
+      position: fixed;
+      left:0; right:0; bottom:0;
+      padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+      background: rgba(11,18,32,.85);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+      z-index: 10;
+    }
+    .footerBar .inner{
+      max-width: 1100px;
+      margin:0 auto;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .footerBar .inner .btn{
+      flex: 1 1 180px;
+      border-radius: 18px;
+    }
+    .muted{ color: var(--muted); }
+    .right{ text-align:right; }
+    .mono{ font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .dangerText{ color: #ff93a5; }
+    .okText{ color: #78f0b2; }
+    .warnText{ color: #ffe0a3; }
+    .divider{ height:1px; background: var(--line); margin: 12px 0; }
+    .small{ font-size: 12px; }
+    .kpi{
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .kpi .chip{
+      min-width: 160px;
+      justify-content:space-between;
+    }
+    .actionsInline{
+      display:flex; gap:8px; align-items:center;
+    }
+    .iconBtn{
+      border-radius: 14px;
+      min-height: 40px;
+      padding: 10px 12px;
+      flex: 0 0 auto;
+    }
+    .toast{
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 78px;
+      background: rgba(20,30,52,.92);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      display:none;
+      z-index: 20;
+      max-width: min(520px, 92vw);
+      font-size: 13px;
+      color: var(--text);
+    }
+    .toast.show{ display:block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <h1>Controle de Frequência e Pagamentos</h1>
+        <p>Cadastro, check-in diário, vales, relatórios por funcionário/obra e exportação CSV. Tudo salvo no seu celular.</p>
+      </div>
+      <div class="chipbar">
+        <div class="chip"><b>Hoje</b><span id="chipHoje" class="mono">—</span></div>
+        <div class="chip"><b>Lançamentos</b><span id="chipLanc" class="mono">0</span></div>
+        <div class="chip"><b>Vales</b><span id="chipVales" class="mono">0</span></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Cadastro -->
+      <section class="card">
+        <div class="head">
+          <h2>1) Cadastro de Base</h2>
+          <small>Funcionários e Obras</small>
+        </div>
+        <div class="body">
+          <div class="row cols2">
+            <div>
+              <label>Nome do Funcionário</label>
+              <input id="empNome" placeholder="Ex.: João Silva" />
+            </div>
+            <div>
+              <label>Função</label>
+              <input id="empFuncao" placeholder="Ex.: Pedreiro" />
+            </div>
+          </div>
+          <div class="row cols2" style="margin-top:10px;">
+            <div>
+              <label>Valor da Diária (R$)</label>
+              <input id="empDiaria" inputmode="decimal" placeholder="Ex.: 180,00" />
+            </div>
+            <div class="btns" style="margin-top:22px;">
+              <button class="btn primary" id="btnAddEmp">+ Cadastrar Funcionário</button>
+              <button class="btn ghost" id="btnLimpaEmp">Limpar</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row cols2">
+            <div>
+              <label>Nome da Obra / Local</label>
+              <input id="obraNome" placeholder="Ex.: UFV Pains - Portaria" />
+            </div>
+            <div class="btns" style="margin-top:22px;">
+              <button class="btn primary" id="btnAddObra">+ Cadastrar Obra</button>
+              <button class="btn ghost" id="btnLimpaObra">Limpar</button>
+            </div>
+          </div>
+
+          <div class="hint">
+            Dica: você pode cadastrar tudo aqui e depois usar os dropdowns no Check-in e no Vale.
+          </div>
+        </div>
+      </section>
+
+      <!-- Check-in -->
+      <section class="card">
+        <div class="head">
+          <h2>2) Lançamento Diário (Check-in)</h2>
+          <small>Frequência e cálculo automático</small>
+        </div>
+        <div class="body">
+          <div class="row cols2">
+            <div>
+              <label>Funcionário</label>
+              <select id="ciFuncionario"></select>
+            </div>
+            <div>
+              <label>Data</label>
+              <input id="ciData" type="date" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <label>Status</label>
+            <div class="seg">
+              <button type="button" id="stFoi" class="active">Foi para obra</button>
+              <button type="button" id="stFaltou">Faltou</button>
+            </div>
+          </div>
+
+          <div class="row cols2" style="margin-top:10px;">
+            <div>
+              <label>Tipo de Jornada</label>
+              <select id="ciJornada">
+                <option value="DIA_TODO">Dia Todo</option>
+                <option value="MEIO_DIA">Meio Dia</option>
+              </select>
+            </div>
+            <div>
+              <label>Obra / Local</label>
+              <select id="ciObra"></select>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <label>Observações</label>
+            <textarea id="ciObs" placeholder="Ex.: Ajudou na concretagem, chegou 30 min atrasado, etc."></textarea>
+          </div>
+
+          <div class="btns">
+            <button class="btn primary" id="btnSalvarCheckin">Salvar Check-in</button>
+            <button class="btn ghost" id="btnLimpaCheckin">Limpar</button>
+          </div>
+
+          <div class="hint">
+            Regras: Dia Todo = 100% da diária · Meio Dia = 50% · Faltou = 0.
+          </div>
+        </div>
+      </section>
+
+      <!-- Vale -->
+      <section class="card">
+        <div class="head">
+          <h2>Vale do Funcionário</h2>
+          <small>Desconta no relatório do período</small>
+        </div>
+        <div class="body">
+          <div class="row cols2">
+            <div>
+              <label>Funcionário</label>
+              <select id="vlFuncionario"></select>
+            </div>
+            <div>
+              <label>Data</label>
+              <input id="vlData" type="date" />
+            </div>
+          </div>
+
+          <div class="row cols2" style="margin-top:10px;">
+            <div>
+              <label>Valor do Vale (R$)</label>
+              <input id="vlValor" inputmode="decimal" placeholder="Ex.: 50,00" />
+            </div>
+            <div>
+              <label>Obra / Local (opcional)</label>
+              <select id="vlObra"></select>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <label>Motivo / Observações</label>
+            <textarea id="vlObs" placeholder="Ex.: Adiantamento para alimentação, transporte, etc."></textarea>
+          </div>
+
+          <div class="btns">
+            <button class="btn primary" id="btnSalvarVale">Salvar Vale</button>
+            <button class="btn ghost" id="btnLimpaVale">Limpar</button>
+          </div>
+
+          <div class="hint">
+            O vale entra como <span class="dangerText">desconto</span> no total do funcionário e pode ser associado a uma obra para estimar custos por obra.
+          </div>
+        </div>
+      </section>
+
+      <!-- Relatório -->
+      <section class="card span2">
+        <div class="head">
+          <h2>Relatórios e Filtros</h2>
+          <small>Filtre por funcionário, obra e período</small>
+        </div>
+        <div class="body">
+          <div class="row cols3">
+            <div>
+              <label>Funcionário</label>
+              <select id="rpFuncionario"></select>
+            </div>
+            <div>
+              <label>Obra / Local</label>
+              <select id="rpObra"></select>
+            </div>
+            <div>
+              <label>Data Início</label>
+              <input id="rpIni" type="date" />
+            </div>
+          </div>
+
+          <div class="row cols3" style="margin-top:10px;">
+            <div>
+              <label>Data Fim</label>
+              <input id="rpFim" type="date" />
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="rpTipo">
+                <option value="AMBOS">Check-ins + Vales</option>
+                <option value="CHECKIN">Somente Check-ins</option>
+                <option value="VALE">Somente Vales</option>
+              </select>
+            </div>
+            <div class="btns" style="margin-top:22px;">
+              <button class="btn primary" id="btnAplicarFiltro">Aplicar Filtro</button>
+              <button class="btn ghost" id="btnLimparFiltro">Limpar</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="kpi">
+            <div class="chip"><b>Total Produção</b><span id="kpiProd" class="mono">R$ 0,00</span></div>
+            <div class="chip"><b>Total Vales</b><span id="kpiVales" class="mono">R$ 0,00</span></div>
+            <div class="chip"><b>A Receber</b><span id="kpiReceber" class="mono">R$ 0,00</span></div>
+            <div class="chip"><b>Registros</b><span id="kpiRegs" class="mono">0</span></div>
+          </div>
+
+          <div class="hint">
+            Para estimar custo de uma obra: selecione a Obra e o período. Você pode deixar “Funcionário” como “Todos”.
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Data</th>
+                  <th>Funcionário</th>
+                  <th>Obra</th>
+                  <th>Status/Jornada</th>
+                  <th class="right">Diária (R$)</th>
+                  <th class="right">Crédito (R$)</th>
+                  <th class="right">Vale (R$)</th>
+                  <th class="right">Saldo (R$)</th>
+                  <th>Obs.</th>
+                  <th class="right">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="rpBody"></tbody>
+            </table>
+          </div>
+
+          <div class="hint small">
+            “Crédito” vem do check-in (dia todo/meio dia/falta). “Vale” é desconto. “Saldo” = Crédito - Vale.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="footerBar">
+    <div class="inner">
+      <button class="btn primary" id="btnExportCSV">Exportar para CSV (Tudo)</button>
+      <button class="btn" id="btnExportCSVFiltrado">Exportar CSV (Filtrado)</button>
+      <button class="btn danger" id="btnReset">Zerar Dados</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { 
+    getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot, query, orderBy 
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDlF2XyHUJAXxwFc4YZVFcS3Jc4bQjaw48",
+    authDomain: "aprouve-frequencia.firebaseapp.com",
+    projectId: "aprouve-frequencia",
+    storageBucket: "aprouve-frequencia.firebasestorage.app",
+    messagingSenderId: "675986931974",
+    appId: "1:675986931974:web:3a48eb841b81fe13e85e87",
+    measurementId: "G-LWRXL5FHR6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Referências das Coleções na Nuvem
+  const colEmp = collection(db, "employees");
+  const colObras = collection(db, "obras");
+  const colCheckins = collection(db, "checkins");
+  const colVales = collection(db, "vales");
+
+  // Variáveis Globais (Sincronizadas com o Firebase)
+  let employees = [];
+  let obras = [];
+  let checkins = [];
+  let vales = [];
+
+  const $ = (id) => document.getElementById(id);
+  const ALL_VALUE = "__ALL__";
+
+  // --- HELPERS ---
+  const toISODate = (d) => {
+    const x = new Date(d);
+    return x.toISOString().split('T')[0];
+  };
+
+  const parseBRL = (val) => {
+    const s = String(val || "").trim().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+    return Number(s) || 0;
+  };
+
+  const fmtBRL = (n) => Number(n || 0).toLocaleString("pt-BR", { style:"currency", currency:"BRL" });
+
+  const toast = (msg) => {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(()=> el.classList.remove("show"), 2400);
+  };
+
+  // --- SINCRONIZAÇÃO EM TEMPO REAL ---
+  function startSync() {
+    // Sincroniza Funcionários
+    onSnapshot(colEmp, (snap) => {
+      employees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rebuildDropdowns();
+    });
+
+    // Sincroniza Obras
+    onSnapshot(colObras, (snap) => {
+      obras = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      rebuildDropdowns();
+    });
+
+    // Sincroniza Checkins
+    onSnapshot(colCheckins, (snap) => {
+      checkins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateChips();
+      applyFilter();
+    });
+
+    // Sincroniza Vales
+    onSnapshot(colVales, (snap) => {
+      vales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateChips();
+      applyFilter();
+    });
+  }
+
+  // --- FUNÇÕES DE INTERFACE ---
+  function initDates(){
+    const today = toISODate(new Date());
+    $("chipHoje").textContent = today;
+    $("ciData").value = today;
+    $("vlData").value = today;
+    const now = new Date();
+    $("rpIni").value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+    $("rpFim").value = toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  }
+
+  function updateChips(){
+    $("chipLanc").textContent = checkins.length;
+    $("chipVales").textContent = vales.length;
+  }
+
+  function rebuildDropdowns(){
+    const selects = {
+      emp: [$("ciFuncionario"), $("vlFuncionario"), $("rpFuncionario")],
+      obra: [$("ciObra"), $("vlObra"), $("rpObra")]
+    };
+
+    selects.emp.forEach(s => s.innerHTML = "");
+    selects.obra.forEach(s => s.innerHTML = "");
+
+    $("rpFuncionario").add(new Option("Todos", ALL_VALUE));
+    $("ciFuncionario").add(new Option("Selecione...", ""));
+    $("vlFuncionario").add(new Option("Selecione...", ""));
+    
+    employees.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(e => {
+      const txt = `${e.nome} (${fmtBRL(e.diaria)})`;
+      $("ciFuncionario").add(new Option(txt, e.id));
+      $("vlFuncionario").add(new Option(txt, e.id));
+      $("rpFuncionario").add(new Option(e.nome, e.id));
+    });
+
+    $("rpObra").add(new Option("Todas", ALL_VALUE));
+    $("ciObra").add(new Option("Selecione...", ""));
+    $("vlObra").add(new Option("(Opcional) Nenhuma", ""));
+
+    obras.sort((a,b) => a.nome.localeCompare(b.nome)).forEach(o => {
+      $("ciObra").add(new Option(o.nome, o.id));
+      $("vlObra").add(new Option(o.nome, o.id));
+      $("rpObra").add(new Option(o.nome, o.id));
+    });
+  }
+
+  // --- AÇÕES CRUD (SALVAR NA NUVEM) ---
+  window.addEmployee = async () => {
+    const nome = $("empNome").value.trim();
+    const diaria = parseBRL($("empDiaria").value);
+    if (!nome || diaria <= 0) return toast("Dados inválidos!");
+    await addDoc(colEmp, { nome, funcao: $("empFuncao").value, diaria });
+    $("empNome").value = ""; $("empFuncao").value = ""; $("empDiaria").value = "";
+    toast("Funcionário salvo na nuvem!");
+  };
+
+  window.addObra = async () => {
+    const nome = $("obraNome").value.trim();
+    if (!nome) return toast("Informe o nome da obra!");
+    await addDoc(colObras, { nome });
+    $("obraNome").value = "";
+    toast("Obra salva na nuvem!");
+  };
+
+  window.saveCheckin = async () => {
+    const empId = $("ciFuncionario").value;
+    const status = $("stFaltou").classList.contains("active") ? "FALTOU" : "FOI";
+    const emp = employees.find(e => e.id === empId);
+    if (!empId || !$("ciData").value) return toast("Preencha os campos!");
+
+    await addDoc(colCheckins, {
+      type: "CHECKIN",
+      empId,
+      data: $("ciData").value,
+      status,
+      jornada: status === "FALTOU" ? "" : $("ciJornada").value,
+      obraId: status === "FALTOU" ? "" : $("ciObra").value,
+      diaria: emp.diaria,
+      credito: status === "FALTOU" ? 0 : ($("ciJornada").value === "MEIO_DIA" ? emp.diaria * 0.5 : emp.diaria),
+      obs: $("ciObs").value
+    });
+    $("ciObs").value = "";
+    toast("Check-in sincronizado!");
+  };
+
+  window.saveVale = async () => {
+    const valor = parseBRL($("vlValor").value);
+    if (!$("vlFuncionario").value || valor <= 0) return toast("Dados inválidos!");
+    await addDoc(colVales, {
+      type: "VALE",
+      empId: $("vlFuncionario").value,
+      data: $("vlData").value,
+      valor,
+      obraId: $("vlObra").value,
+      obs: $("vlObs").value
+    });
+    $("vlValor").value = ""; $("vlObs").value = "";
+    toast("Vale registrado na nuvem!");
+  };
+
+  // --- RELATÓRIOS E FILTROS ---
+  window.applyFilter = () => {
+    const empFiltro = $("rpFuncionario").value;
+    const obraFiltro = $("rpObra").value;
+    const ini = $("rpIni").value;
+    const fim = $("rpFim").value;
+
+    let unificado = [
+      ...checkins.map(c => ({...c, vale: 0})),
+      ...vales.map(v => ({...v, credito: 0, status: "", jornada: ""}))
+    ];
+
+    const filtrados = unificado.filter(it => {
+      if (empFiltro !== ALL_VALUE && it.empId !== empFiltro) return false;
+      if (obraFiltro !== ALL_VALUE && it.obraId !== obraFiltro) return false;
+      if (ini && it.data < ini) return false;
+      if (fim && it.data > fim) return false;
+      return true;
+    }).sort((a,b) => b.data.localeCompare(a.data));
+
+    renderTable(filtrados);
+  };
+
+  function renderTable(items) {
+    const tbody = $("rpBody");
+    tbody.innerHTML = "";
+    let tCred = 0, tVal = 0;
+
+    items.forEach(it => {
+      const saldo = (it.credito || 0) - (it.valor || 0);
+      tCred += (it.credito || 0);
+      tVal += (it.valor || 0);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${it.type}</td>
+        <td class="mono">${it.data}</td>
+        <td>${employees.find(e=>e.id===it.empId)?.nome || "---"}</td>
+        <td>${obras.find(o=>o.id===it.obraId)?.nome || "---"}</td>
+        <td>${it.status || "Vale"}</td>
+        <td class="right">${fmtBRL(it.diaria || 0)}</td>
+        <td class="right okText">${fmtBRL(it.credito || 0)}</td>
+        <td class="right dangerText">${fmtBRL(it.valor || 0)}</td>
+        <td class="right">${fmtBRL(saldo)}</td>
+        <td>${it.obs || ""}</td>
+        <td class="right"><button class="btn ghost" onclick="deleteItem('${it.type}','${it.id}')">Excluir</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    $("kpiProd").textContent = fmtBRL(tCred);
+    $("kpiVales").textContent = fmtBRL(tVal);
+    $("kpiReceber").textContent = fmtBRL(tCred - tVal);
+    $("kpiRegs").textContent = items.length;
+  }
+
+  window.deleteItem = async (type, id) => {
+    if(!confirm("Deseja excluir?")) return;
+    const collectionRef = type === "CHECKIN" ? colCheckins : colVales;
+    await deleteDoc(doc(collectionRef, id));
+    toast("Excluído!");
+  };
+
+  // Event Listeners dos Botões
+  $("btnAddEmp").onclick = window.addEmployee;
+  $("btnAddObra").onclick = window.addObra;
+  $("btnSalvarCheckin").onclick = window.saveCheckin;
+  $("btnSalvarVale").onclick = window.saveVale;
+  $("btnAplicarFiltro").onclick = window.applyFilter;
+  $("stFoi").onclick = () => { $("stFoi").classList.add("active"); $("stFaltou").classList.remove("active"); };
+  $("stFaltou").onclick = () => { $("stFaltou").classList.add("active"); $("stFoi").classList.remove("active"); };
+
+  // Inicialização
+  initDates();
+  startSync();
+</script>
+</body>
+</html>
