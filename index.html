@@ -277,6 +277,21 @@
 
     /* Ajuste para relatórios materiais: tabela menor no mobile */
     .tableWrap.slim table{ min-width: 780px; }
+
+    /* Lista funcionários */
+    .tableWrap.mini table{ min-width: 720px; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      font-size: 12px;
+      color: var(--muted);
+      user-select:none;
+    }
   </style>
 </head>
 
@@ -312,6 +327,7 @@
           <div class="homeBtns">
             <button class="btn primary bigBtn" id="goFrequencia">Controle de Frequência</button>
             <button class="btn bigBtn" id="goMateriais">Gestão de Materiais/Obras</button>
+            <button class="btn bigBtn" id="goResumo">Resumo (Financeiro)</button>
           </div>
 
           <div class="hint">
@@ -321,7 +337,7 @@
       </div>
     </section>
 
-    <!-- FREQUÊNCIA (SEU CÓDIGO ATUAL INTEGRADO) -->
+    <!-- FREQUÊNCIA -->
     <section id="pageFrequencia" class="page">
       <div class="btns" style="margin-bottom:12px;">
         <button class="btn ghost" id="backFromFrequencia">← Voltar</button>
@@ -345,15 +361,45 @@
                 <input id="empFuncao" placeholder="Ex.: Pedreiro" />
               </div>
             </div>
+
+            <!-- ✅ CHAVE PIX -->
             <div class="row cols2" style="margin-top:10px;">
               <div>
                 <label>Valor da Diária (R$)</label>
                 <input id="empDiaria" inputmode="decimal" placeholder="Ex.: 180,00" />
               </div>
-              <div class="btns" style="margin-top:22px;">
-                <button class="btn primary" id="btnAddEmp">+ Cadastrar Funcionário</button>
-                <button class="btn ghost" id="btnLimpaEmp" type="button">Limpar</button>
+              <div>
+                <label>Chave PIX</label>
+                <input id="empPix" placeholder="Ex.: CPF / celular / e-mail / chave aleatória" />
               </div>
+            </div>
+
+            <div class="btns" style="margin-top:10px;">
+              <button class="btn primary" id="btnAddEmp">+ Cadastrar Funcionário</button>
+              <button class="btn ghost" id="btnLimpaEmp" type="button">Limpar</button>
+              <span class="pill" id="empEditPill" style="display:none;">Editando cadastro…</span>
+            </div>
+
+            <!-- ✅ LISTAGEM + EDITAR -->
+            <div class="divider"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <div style="font-weight:850;">Funcionários cadastrados</div>
+              <small class="muted">Clique em “Editar” para atualizar sem criar novo registro</small>
+            </div>
+
+            <div class="tableWrap mini" style="margin-top:10px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Função</th>
+                    <th class="right">Diária</th>
+                    <th>Chave PIX</th>
+                    <th class="right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="empBody"></tbody>
+              </table>
             </div>
 
             <div class="divider"></div>
@@ -557,6 +603,59 @@
       </div>
     </section>
 
+    <!-- ✅ RESUMO (NOVO) -->
+    <section id="pageResumo" class="page">
+      <div class="btns" style="margin-bottom:12px;">
+        <button class="btn ghost" id="backFromResumo">← Voltar</button>
+      </div>
+
+      <section class="card">
+        <div class="head">
+          <h2>Resumo (Relatório Financeiro)</h2>
+          <small>Somatório por funcionário no período</small>
+        </div>
+        <div class="body">
+          <div class="row cols3">
+            <div>
+              <label>Data Início</label>
+              <input id="rsIni" type="date" />
+            </div>
+            <div>
+              <label>Data Fim</label>
+              <input id="rsFim" type="date" />
+            </div>
+            <div class="btns" style="margin-top:22px;">
+              <button class="btn primary" id="btnGerarResumo">Gerar Resumo</button>
+              <button class="btn ghost" id="btnLimparResumo" type="button">Limpar</button>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionário</th>
+                  <th>Função</th>
+                  <th class="right">Total de Diárias (R$)</th>
+                  <th class="right">Total de Vales (R$)</th>
+                  <th class="right">Total de Dias</th>
+                  <th class="right">Valor Líquido a Pagar</th>
+                  <th>Chave PIX</th>
+                </tr>
+              </thead>
+              <tbody id="rsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="hint small">
+            Total de Diárias = soma do <b>Crédito</b> dos check-ins (dia todo/meio dia). Total de Dias: Dia Todo = 1 · Meio Dia = 0,5.
+          </div>
+        </div>
+      </section>
+    </section>
+
     <!-- MATERIAIS -->
     <section id="pageMateriais" class="page">
       <div class="btns" style="margin-bottom:12px;">
@@ -727,7 +826,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import {
-    getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot
+    getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   // ✅ Mesmas credenciais do seu código
@@ -762,13 +861,19 @@
   let materiais = [];
   let abastecimentos = [];
 
+  // ✅ guarda o último resultado do filtro (pra exportar “filtrado”)
+  let lastFiltered = [];
+
+  // ✅ modo edição funcionário
+  let editingEmpId = null;
+
   const $ = (id) => document.getElementById(id);
   const ALL_VALUE = "__ALL__";
 
   // Helpers
   const toISODate = (d) => {
     const x = new Date(d);
-    return x.toISOString().split('T')[0];
+    return x.toISOString().split("T")[0];
   };
 
   const parseBRL = (val) => {
@@ -785,12 +890,89 @@
     setTimeout(()=> el.classList.remove("show"), 2400);
   };
 
+  // ---------------------------
+  // ✅ CSV EXPORT (corrigido)
+  // ---------------------------
+  function csvEscape(value){
+    const s = String(value ?? "");
+    const needsQuotes = /[;"\r\n]/.test(s);
+    const escaped = s.replace(/"/g, '""');
+    return needsQuotes ? `"${escaped}"` : escaped;
+  }
+
+  function downloadBlob(filename, content, mime = "text/csv;charset=utf-8"){
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + content], { type: mime });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function buildUnifiedAll(){
+    return [
+      ...checkins.map(c => ({...c, valor: 0})),
+      ...vales.map(v => ({...v, credito: 0, status: "", jornada: ""}))
+    ].sort((a,b) => (b.data||"").localeCompare(a.data||""));
+  }
+
+  function exportCSV(items, filename){
+    if (!items || items.length === 0){
+      toast("Nada para exportar.");
+      return;
+    }
+
+    const header = [
+      "tipo","data","funcionario","obra","status_jornada",
+      "diaria","credito","vale","saldo","obs","id"
+    ];
+
+    const lines = [header.join(";")];
+
+    for (const it of items){
+      const empNome = employees.find(e => e.id === it.empId)?.nome || "";
+      const obraNome = obras.find(o => o.id === it.obraId)?.nome || "";
+      const statusJornada =
+        it.type === "VALE"
+          ? "Vale"
+          : `${it.status || ""}${it.jornada ? " / " + it.jornada : ""}`;
+
+      const diaria = Number(it.diaria || 0);
+      const credito = Number(it.credito || 0);
+      const vale = Number(it.valor || 0);
+      const saldo = credito - vale;
+
+      const row = [
+        it.type || "",
+        it.data || "",
+        empNome,
+        obraNome,
+        statusJornada,
+        diaria.toFixed(2).replace(".", ","),
+        credito.toFixed(2).replace(".", ","),
+        vale.toFixed(2).replace(".", ","),
+        saldo.toFixed(2).replace(".", ","),
+        it.obs || "",
+        it.id || ""
+      ].map(csvEscape);
+
+      lines.push(row.join(";"));
+    }
+
+    downloadBlob(filename, lines.join("\r\n"));
+    toast("CSV exportado!");
+  }
+
   // SPA nav
   function showPage(pageId){
-    ["pageHome","pageFrequencia","pageMateriais"].forEach(id => $(id).classList.remove("show"));
+    ["pageHome","pageFrequencia","pageMateriais","pageResumo"].forEach(id => $(id).classList.remove("show"));
     $(pageId).classList.add("show");
-
-    // footer só na Frequência
     $("footerBar").style.display = (pageId === "pageFrequencia") ? "block" : "none";
   }
 
@@ -806,6 +988,10 @@
     const now = new Date();
     $("rpIni").value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
     $("rpFim").value = toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
+    // Resumo
+    $("rsIni").value = $("rpIni").value;
+    $("rsFim").value = $("rpFim").value;
 
     // Materiais
     $("mtData").value = today;
@@ -862,6 +1048,30 @@
       });
   }
 
+  // ✅ Render lista funcionários + botão editar
+  function renderEmployeesTable(){
+    const tbody = $("empBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    employees
+      .slice()
+      .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""))
+      .forEach(e => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.nome || "---"}</td>
+          <td>${e.funcao || ""}</td>
+          <td class="right mono">${fmtBRL(e.diaria || 0)}</td>
+          <td class="mono">${e.pixKey || ""}</td>
+          <td class="right">
+            <button class="btn ghost" data-empedit="${e.id}">Editar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+  }
+
   // ---------------------------
   // SYNC em tempo real (Firebase)
   // ---------------------------
@@ -869,35 +1079,39 @@
     onSnapshot(colEmp, (snap) => {
       employees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       rebuildDropdowns();
+      renderEmployeesTable();
       applyFilter();
+      // Se estiver editando e o doc sumiu, cancela modo edição
+      if (editingEmpId && !employees.some(e => e.id === editingEmpId)) cancelEditEmployee();
+      renderResumo(); // mantém resumo atualizado se estiver na tela
     });
 
     onSnapshot(colObras, (snap) => {
       obras = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       rebuildDropdowns();
       applyFilter();
-      renderMateriaisTable(); // obra name no relatório
+      renderMateriaisTable();
     });
 
     onSnapshot(colCheckins, (snap) => {
       checkins = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       updateChips();
       applyFilter();
+      renderResumo();
     });
 
     onSnapshot(colVales, (snap) => {
       vales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       updateChips();
       applyFilter();
+      renderResumo();
     });
 
-    // ✅ Materiais
     onSnapshot(colMateriais, (snap) => {
       materiais = snap.docs.map(d => ({ id: d.id, ...d.data(), _collection:"materiais" }));
       renderMateriaisTable();
     });
 
-    // ✅ Abastecimento
     onSnapshot(colAbastecimento, (snap) => {
       abastecimentos = snap.docs.map(d => ({ id: d.id, ...d.data(), _collection:"abastecimento" }));
       renderMateriaisTable();
@@ -905,15 +1119,73 @@
   }
 
   // ---------------------------
-  // CRUD - Frequência (seu código)
+  // ✅ VALIDAÇÃO DUPLICIDADE (LANÇAMENTOS)
+  // - Impede 2 CHECKIN (diária) no mesmo dia por funcionário
+  // - VALE pode repetir
   // ---------------------------
-  async function addEmployee(){
+  function hasDuplicateDaily(empId, dataISO){
+    // trava por (empId + data) em CHECKIN
+    return checkins.some(c => c.empId === empId && c.data === dataISO);
+  }
+
+  // ---------------------------
+  // CRUD - Frequência
+  // ---------------------------
+  function normalizePixKey(s){
+    return String(s || "").trim();
+  }
+
+  function startEditEmployee(empId){
+    const emp = employees.find(e => e.id === empId);
+    if (!emp) return toast("Funcionário não encontrado.");
+
+    editingEmpId = empId;
+    $("empNome").value = emp.nome || "";
+    $("empFuncao").value = emp.funcao || "";
+    $("empDiaria").value = String(emp.diaria ?? "").replace(".", ",");
+    $("empPix").value = emp.pixKey || "";
+
+    $("btnAddEmp").textContent = "Salvar Alterações";
+    $("empEditPill").style.display = "inline-flex";
+    toast("Modo edição ativado.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEditEmployee(){
+    editingEmpId = null;
+    $("btnAddEmp").textContent = "+ Cadastrar Funcionário";
+    $("empEditPill").style.display = "none";
+    $("empNome").value = "";
+    $("empFuncao").value = "";
+    $("empDiaria").value = "";
+    $("empPix").value = "";
+  }
+
+  async function addOrUpdateEmployee(){
     const nome = $("empNome").value.trim();
+    const funcao = $("empFuncao").value.trim();
     const diaria = parseBRL($("empDiaria").value);
-    if (!nome || diaria <= 0) return toast("Dados inválidos!");
-    await addDoc(colEmp, { nome, funcao: $("empFuncao").value, diaria });
-    $("empNome").value = ""; $("empFuncao").value = ""; $("empDiaria").value = "";
+    const pixKey = normalizePixKey($("empPix").value);
+
+    if (!nome || diaria <= 0){
+      return toast("Dados inválidos! (Nome e Diária são obrigatórios)");
+    }
+
+    if (editingEmpId){
+      await updateDoc(doc(colEmp, editingEmpId), {
+        nome,
+        funcao,
+        diaria,
+        pixKey // ✅ novo campo (compatível: pode ser vazio)
+      });
+      toast("Cadastro atualizado!");
+      cancelEditEmployee();
+      return;
+    }
+
+    await addDoc(colEmp, { nome, funcao, diaria, pixKey });
     toast("Funcionário salvo na nuvem!");
+    cancelEditEmployee();
   }
 
   async function addObra(){
@@ -926,28 +1198,46 @@
 
   async function saveCheckin(){
     const empId = $("ciFuncionario").value;
+    const dataISO = $("ciData").value;
     const status = $("stFaltou").classList.contains("active") ? "FALTOU" : "FOI";
     const emp = employees.find(e => e.id === empId);
-    if (!empId || !$("ciData").value) return toast("Preencha os campos!");
+
+    if (!empId || !dataISO) return toast("Preencha os campos!");
+    if (!emp) return toast("Funcionário inválido.");
+
+    // ✅ trava duplicidade de diária: 2 CHECKIN no mesmo dia para o mesmo funcionário
+    if (hasDuplicateDaily(empId, dataISO)){
+      alert("Duplicidade detectada: este funcionário já possui lançamento de Diária (Check-in) nesta data.");
+      return;
+    }
+
+    const jornada = (status === "FALTOU") ? "" : $("ciJornada").value;
+    const diaria = emp?.diaria || 0;
+    const credito = (status === "FALTOU")
+      ? 0
+      : (jornada === "MEIO_DIA" ? diaria * 0.5 : diaria);
 
     await addDoc(colCheckins, {
       type: "CHECKIN",
       empId,
-      data: $("ciData").value,
+      data: dataISO,
       status,
-      jornada: status === "FALTOU" ? "" : $("ciJornada").value,
+      jornada,
       obraId: status === "FALTOU" ? "" : $("ciObra").value,
-      diaria: emp?.diaria || 0,
-      credito: status === "FALTOU" ? 0 : ($("ciJornada").value === "MEIO_DIA" ? (emp?.diaria||0) * 0.5 : (emp?.diaria||0)),
+      diaria,
+      credito,
       obs: $("ciObs").value
     });
+
     $("ciObs").value = "";
     toast("Check-in sincronizado!");
   }
 
   async function saveVale(){
     const valor = parseBRL($("vlValor").value);
-    if (!$("vlFuncionario").value || valor <= 0) return toast("Dados inválidos!");
+    if (!$("vlFuncionario").value || !$("vlData").value || valor <= 0) return toast("Dados inválidos!");
+
+    // ✅ VALE pode repetir no mesmo dia (sem trava)
     await addDoc(colVales, {
       type: "VALE",
       empId: $("vlFuncionario").value,
@@ -961,7 +1251,7 @@
   }
 
   // ---------------------------
-  // ✅ NOVO - Materiais / Abastecimento
+  // Materiais / Abastecimento
   // ---------------------------
   async function saveMaterial(){
     const fornecedor = $("mtFornecedor").value.trim();
@@ -985,7 +1275,7 @@
       obraId,
       valorTotal,
       pagamento,
-      parcelas,              // ✅ pronto pro futuro contas a pagar
+      parcelas,
       createdAt: Date.now()
     });
 
@@ -1038,17 +1328,13 @@
   // Relatórios Frequência
   // ---------------------------
   function applyFilter(){
-    // (mantive seu rpTipo no HTML; aqui você pode evoluir pra filtrar por tipo também)
     const empFiltro = $("rpFuncionario").value;
     const obraFiltro = $("rpObra").value;
     const ini = $("rpIni").value;
     const fim = $("rpFim").value;
     const tipo = $("rpTipo").value;
 
-    let unificado = [
-      ...checkins.map(c => ({...c, valor: 0})),
-      ...vales.map(v => ({...v, credito: 0, status: "", jornada: ""}))
-    ];
+    const unificado = buildUnifiedAll();
 
     const filtrados = unificado.filter(it => {
       if (tipo === "CHECKIN" && it.type !== "CHECKIN") return false;
@@ -1059,8 +1345,9 @@
       if (ini && it.data < ini) return false;
       if (fim && it.data > fim) return false;
       return true;
-    }).sort((a,b) => b.data.localeCompare(a.data));
+    }).sort((a,b) => (b.data||"").localeCompare(a.data||""));
 
+    lastFiltered = filtrados;
     renderTable(filtrados);
   }
 
@@ -1105,7 +1392,75 @@
   }
 
   // ---------------------------
-  // ✅ Relatório Materiais + Abastecimento
+  // ✅ RESUMO (Relatório Financeiro)
+  // ---------------------------
+  function fmtDias(n){
+    const x = Number(n || 0);
+    // mostra 0,5 / 1,0 etc em pt-BR
+    return x.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  }
+
+  function renderResumo(){
+    const tbody = $("rsBody");
+    if (!tbody) return;
+
+    const ini = $("rsIni")?.value || "";
+    const fim = $("rsFim")?.value || "";
+    if (!ini || !fim) {
+      tbody.innerHTML = "";
+      return;
+    }
+
+    // Index de vales por emp
+    const valesNoPeriodo = vales.filter(v => v.data >= ini && v.data <= fim);
+
+    // Index de checkins por emp
+    const checkinsNoPeriodo = checkins.filter(c => c.data >= ini && c.data <= fim);
+
+    const resumo = employees.map(emp => {
+      const cs = checkinsNoPeriodo.filter(c => c.empId === emp.id);
+      const vs = valesNoPeriodo.filter(v => v.empId === emp.id);
+
+      const totalDiarias = cs.reduce((acc,c)=> acc + Number(c.credito || 0), 0);
+      const totalVales = vs.reduce((acc,v)=> acc + Number(v.valor || 0), 0);
+
+      const totalDias = cs.reduce((acc,c)=>{
+        if (c.status !== "FOI") return acc;
+        return acc + (c.jornada === "MEIO_DIA" ? 0.5 : 1);
+      }, 0);
+
+      const liquido = totalDiarias - totalVales;
+
+      return {
+        nome: emp.nome || "",
+        funcao: emp.funcao || "",
+        totalDiarias,
+        totalVales,
+        totalDias,
+        liquido,
+        pixKey: emp.pixKey || ""
+      };
+    })
+    .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""));
+
+    tbody.innerHTML = "";
+    resumo.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.nome}</td>
+        <td>${r.funcao}</td>
+        <td class="right mono okText">${fmtBRL(r.totalDiarias)}</td>
+        <td class="right mono dangerText">${fmtBRL(r.totalVales)}</td>
+        <td class="right mono">${fmtDias(r.totalDias)}</td>
+        <td class="right mono"><b>${fmtBRL(r.liquido)}</b></td>
+        <td class="mono">${r.pixKey}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ---------------------------
+  // Relatório Materiais + Abastecimento
   // ---------------------------
   function renderMateriaisTable(){
     const tbody = $("mtBody");
@@ -1132,7 +1487,7 @@
         data: a.data || "",
         who: a.veiculo || "",
         nf: "",
-        obraId: "", // abastecimento não tem obra (por enquanto)
+        obraId: "",
         pagamento: "",
         litros: a.litros || 0,
         valor: a.valor || 0,
@@ -1143,7 +1498,6 @@
 
     joined
       .sort((a,b) => {
-        // prioriza data e, em empate, createdAt
         const c = (b.data||"").localeCompare(a.data||"");
         return c !== 0 ? c : (b.createdAt - a.createdAt);
       })
@@ -1187,23 +1541,35 @@
   // SPA
   $("goFrequencia").onclick = () => showPage("pageFrequencia");
   $("goMateriais").onclick  = () => showPage("pageMateriais");
+  $("goResumo").onclick     = () => { showPage("pageResumo"); renderResumo(); };
+
   $("backFromFrequencia").onclick = () => showPage("pageHome");
   $("backFromMateriais").onclick  = () => showPage("pageHome");
+  $("backFromResumo").onclick     = () => showPage("pageHome");
 
   // Frequência
-  $("btnAddEmp").onclick = addEmployee;
+  $("btnAddEmp").onclick = addOrUpdateEmployee;
   $("btnAddObra").onclick = addObra;
   $("btnSalvarCheckin").onclick = saveCheckin;
   $("btnSalvarVale").onclick = saveVale;
   $("btnAplicarFiltro").onclick = applyFilter;
 
-  $("btnLimpaEmp").onclick = () => { $("empNome").value=""; $("empFuncao").value=""; $("empDiaria").value=""; };
+  $("btnLimpaEmp").onclick = cancelEditEmployee;
   $("btnLimpaObra").onclick = () => { $("obraNome").value=""; };
   $("btnLimpaCheckin").onclick = () => { $("ciObs").value=""; };
   $("btnLimpaVale").onclick = () => { $("vlValor").value=""; $("vlObs").value=""; };
 
   $("stFoi").onclick = () => { $("stFoi").classList.add("active"); $("stFaltou").classList.remove("active"); };
   $("stFaltou").onclick = () => { $("stFaltou").classList.add("active"); $("stFoi").classList.remove("active"); };
+
+  // Resumo
+  $("btnGerarResumo").onclick = renderResumo;
+  $("btnLimparResumo").onclick = () => {
+    const now = new Date();
+    $("rsIni").value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+    $("rsFim").value = toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    renderResumo();
+  };
 
   // Materiais
   $("mtPagamento").addEventListener("change", () => {
@@ -1215,7 +1581,19 @@
   $("btnLimpaMaterial").onclick = clearMaterialForm;
   $("btnLimpaAbastecimento").onclick = clearAbastecimentoForm;
 
-  // Delegação de eventos (excluir linhas das tabelas)
+  // ✅ Exportações CSV
+  $("btnExportCSV").onclick = () => {
+    const all = buildUnifiedAll();
+    const hoje = toISODate(new Date());
+    exportCSV(all, `frequencia_tudo_${hoje}.csv`);
+  };
+
+  $("btnExportCSVFiltrado").onclick = () => {
+    const hoje = toISODate(new Date());
+    exportCSV(lastFiltered, `frequencia_filtrado_${hoje}.csv`);
+  };
+
+  // Delegação de eventos (excluir/editar)
   document.addEventListener("click", async (ev) => {
     const t = ev.target;
 
@@ -1232,6 +1610,12 @@
       const id = t.getAttribute("data-delid");
       await deleteMaterialOuAbastecimento(col, id);
     }
+
+    // ✅ Editar Funcionário
+    if (t?.matches?.("button[data-empedit]")){
+      const empId = t.getAttribute("data-empedit");
+      startEditEmployee(empId);
+    }
   });
 
   // ---------------------------
@@ -1239,7 +1623,7 @@
   // ---------------------------
   initDates();
   startSync();
-  showPage("pageHome"); // começa na Home
+  showPage("pageHome");
 </script>
 </body>
 </html>
