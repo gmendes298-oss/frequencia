@@ -300,11 +300,11 @@
     <header>
       <div class="brand">
         <h1>Gestão de Obras</h1>
-        <p>SPA: Frequência, Vales, Materiais e Abastecimento — tudo sincronizado no Firebase.</p>
+        <p>SPA: Cadastro, Frequência, Resumo Financeiro, Materiais e Abastecimento — tudo no Firebase.</p>
       </div>
       <div class="chipbar">
         <div class="chip"><b>Hoje</b><span id="chipHoje" class="mono">—</span></div>
-        <div class="chip"><b>Lançamentos</b><span id="chipLanc" class="mono">0</span></div>
+        <div class="chip"><b>Diárias</b><span id="chipLanc" class="mono">0</span></div>
         <div class="chip"><b>Vales</b><span id="chipVales" class="mono">0</span></div>
       </div>
     </header>
@@ -325,7 +325,9 @@
           </div>
 
           <div class="homeBtns">
-            <button class="btn primary bigBtn" id="goFrequencia">Controle de Frequência</button>
+            <!-- ✅ Reorganização do menu -->
+            <button class="btn primary bigBtn" id="goCadastro">Cadastro de Funcionários</button>
+            <button class="btn bigBtn" id="goFrequencia">Frequência</button>
             <button class="btn bigBtn" id="goMateriais">Gestão de Materiais/Obras</button>
             <button class="btn bigBtn" id="goResumo">Resumo (Financeiro)</button>
           </div>
@@ -337,18 +339,18 @@
       </div>
     </section>
 
-    <!-- FREQUÊNCIA -->
-    <section id="pageFrequencia" class="page">
+    <!-- ✅ CADASTRO DE FUNCIONÁRIOS (exclusivo para cadastro/edição/exclusão) -->
+    <section id="pageCadastro" class="page">
       <div class="btns" style="margin-bottom:12px;">
-        <button class="btn ghost" id="backFromFrequencia">← Voltar</button>
+        <button class="btn ghost" id="backFromCadastro">← Voltar</button>
       </div>
 
       <div class="grid">
-        <!-- Cadastro -->
+        <!-- Cadastro Funcionários -->
         <section class="card">
           <div class="head">
-            <h2>1) Cadastro de Base</h2>
-            <small>Funcionários e Obras</small>
+            <h2>Cadastro de Funcionários</h2>
+            <small>Cadastre, edite e exclua colaboradores (inclui Chave PIX)</small>
           </div>
           <div class="body">
             <div class="row cols2">
@@ -362,7 +364,6 @@
               </div>
             </div>
 
-            <!-- ✅ CHAVE PIX -->
             <div class="row cols2" style="margin-top:10px;">
               <div>
                 <label>Valor da Diária (R$)</label>
@@ -380,11 +381,11 @@
               <span class="pill" id="empEditPill" style="display:none;">Editando cadastro…</span>
             </div>
 
-            <!-- ✅ LISTAGEM + EDITAR -->
             <div class="divider"></div>
+
             <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
               <div style="font-weight:850;">Funcionários cadastrados</div>
-              <small class="muted">Clique em “Editar” para atualizar sem criar novo registro</small>
+              <small class="muted">Editar atualiza o registro (não cria outro)</small>
             </div>
 
             <div class="tableWrap mini" style="margin-top:10px;">
@@ -402,8 +403,19 @@
               </table>
             </div>
 
-            <div class="divider"></div>
+            <div class="hint small">
+              Obs.: excluir funcionário não apaga lançamentos antigos, mas pode dificultar relatórios históricos (pois o nome vem do cadastro).
+            </div>
+          </div>
+        </section>
 
+        <!-- Cadastro Obras (mantido aqui para evitar mexer no operacional) -->
+        <section class="card">
+          <div class="head">
+            <h2>Cadastro de Obras / Locais</h2>
+            <small>Usado nos lançamentos e nos relatórios</small>
+          </div>
+          <div class="body">
             <div class="row cols2">
               <div>
                 <label>Nome da Obra / Local</label>
@@ -415,110 +427,101 @@
               </div>
             </div>
 
-            <div class="hint">Dica: você pode cadastrar tudo aqui e depois usar os dropdowns no Check-in e no Vale.</div>
+            <div class="hint">As obras cadastradas aparecem automaticamente na tela de Frequência e Materiais.</div>
           </div>
         </section>
+      </div>
+    </section>
 
-        <!-- Check-in -->
+    <!-- ✅ FREQUÊNCIA (tela operacional: lançamentos + relatórios) -->
+    <section id="pageFrequencia" class="page">
+      <div class="btns" style="margin-bottom:12px;">
+        <button class="btn ghost" id="backFromFrequencia">← Voltar</button>
+      </div>
+
+      <div class="grid">
+        <!-- Lançamento Operacional -->
         <section class="card">
           <div class="head">
-            <h2>2) Lançamento Diário (Check-in)</h2>
-            <small>Frequência e cálculo automático</small>
+            <h2>Lançamento (Operacional)</h2>
+            <small>Registre Diária (Check-in) ou Vale — sem mexer no cadastro</small>
           </div>
           <div class="body">
+            <!-- Seleção comum -->
             <div class="row cols2">
               <div>
                 <label>Funcionário</label>
-                <select id="ciFuncionario"></select>
+                <select id="opFuncionario"></select>
               </div>
               <div>
                 <label>Data</label>
-                <input id="ciData" type="date" />
+                <input id="opData" type="date" />
               </div>
             </div>
 
             <div class="row" style="margin-top:10px;">
-              <label>Status</label>
+              <label>Tipo de Lançamento</label>
               <div class="seg">
-                <button type="button" id="stFoi" class="active">Foi para obra</button>
-                <button type="button" id="stFaltou">Faltou</button>
+                <button type="button" id="opTipoDiaria" class="active">Diária</button>
+                <button type="button" id="opTipoVale">Vale</button>
               </div>
             </div>
 
-            <div class="row cols2" style="margin-top:10px;">
-              <div>
-                <label>Tipo de Jornada</label>
-                <select id="ciJornada">
-                  <option value="DIA_TODO">Dia Todo</option>
-                  <option value="MEIO_DIA">Meio Dia</option>
-                </select>
+            <!-- Bloco DIÁRIA -->
+            <div id="wrapDiaria" style="margin-top:10px;">
+              <div class="row" style="margin-top:10px;">
+                <label>Status</label>
+                <div class="seg">
+                  <button type="button" id="stFoi" class="active">Foi para obra</button>
+                  <button type="button" id="stFaltou">Faltou</button>
+                </div>
               </div>
-              <div>
-                <label>Obra / Local</label>
-                <select id="ciObra"></select>
+
+              <div class="row cols2" style="margin-top:10px;">
+                <div>
+                  <label>Tipo de Jornada</label>
+                  <select id="opJornada">
+                    <option value="DIA_TODO">Dia Todo</option>
+                    <option value="MEIO_DIA">Meio Dia</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Obra / Local</label>
+                  <select id="opObra"></select>
+                </div>
               </div>
+
+              <div class="hint">Regra: um funcionário não pode ter <b>2 diárias</b> no mesmo dia (trava automática).</div>
+            </div>
+
+            <!-- Bloco VALE -->
+            <div id="wrapVale" style="margin-top:10px; display:none;">
+              <div class="row cols2">
+                <div>
+                  <label>Valor do Vale (R$)</label>
+                  <input id="opValeValor" inputmode="decimal" placeholder="Ex.: 50,00" />
+                </div>
+                <div>
+                  <label>Obra / Local (opcional)</label>
+                  <select id="opValeObra"></select>
+                </div>
+              </div>
+              <div class="hint">Vale pode ser lançado <b>mais de uma vez</b> no mesmo dia para o mesmo funcionário.</div>
             </div>
 
             <div class="row" style="margin-top:10px;">
               <label>Observações</label>
-              <textarea id="ciObs" placeholder="Ex.: Ajudou na concretagem, chegou 30 min atrasado, etc."></textarea>
+              <textarea id="opObs" placeholder="Ex.: adiantamento alimentação / ajudou na concretagem / etc."></textarea>
             </div>
 
             <div class="btns">
-              <button class="btn primary" id="btnSalvarCheckin">Salvar Check-in</button>
-              <button class="btn ghost" id="btnLimpaCheckin" type="button">Limpar</button>
-            </div>
-
-            <div class="hint">Regras: Dia Todo = 100% da diária · Meio Dia = 50% · Faltou = 0.</div>
-          </div>
-        </section>
-
-        <!-- Vale -->
-        <section class="card">
-          <div class="head">
-            <h2>Vale do Funcionário</h2>
-            <small>Desconta no relatório do período</small>
-          </div>
-          <div class="body">
-            <div class="row cols2">
-              <div>
-                <label>Funcionário</label>
-                <select id="vlFuncionario"></select>
-              </div>
-              <div>
-                <label>Data</label>
-                <input id="vlData" type="date" />
-              </div>
-            </div>
-
-            <div class="row cols2" style="margin-top:10px;">
-              <div>
-                <label>Valor do Vale (R$)</label>
-                <input id="vlValor" inputmode="decimal" placeholder="Ex.: 50,00" />
-              </div>
-              <div>
-                <label>Obra / Local (opcional)</label>
-                <select id="vlObra"></select>
-              </div>
-            </div>
-
-            <div class="row" style="margin-top:10px;">
-              <label>Motivo / Observações</label>
-              <textarea id="vlObs" placeholder="Ex.: Adiantamento para alimentação, transporte, etc."></textarea>
-            </div>
-
-            <div class="btns">
-              <button class="btn primary" id="btnSalvarVale">Salvar Vale</button>
-              <button class="btn ghost" id="btnLimpaVale" type="button">Limpar</button>
-            </div>
-
-            <div class="hint">
-              O vale entra como <span class="dangerText">desconto</span> no total do funcionário e pode ser associado a uma obra para estimar custos por obra.
+              <button class="btn primary" id="btnSalvarOperacional">Salvar Lançamento</button>
+              <button class="btn ghost" id="btnLimpaOperacional" type="button">Limpar</button>
             </div>
           </div>
         </section>
 
-        <!-- Relatório -->
+        <!-- Relatórios (operacional) -->
         <section class="card span2">
           <div class="head">
             <h2>Relatórios e Filtros</h2>
@@ -548,8 +551,8 @@
               <div>
                 <label>Tipo</label>
                 <select id="rpTipo">
-                  <option value="AMBOS">Check-ins + Vales</option>
-                  <option value="CHECKIN">Somente Check-ins</option>
+                  <option value="AMBOS">Diárias + Vales</option>
+                  <option value="CHECKIN">Somente Diárias</option>
                   <option value="VALE">Somente Vales</option>
                 </select>
               </div>
@@ -562,7 +565,7 @@
             <div class="divider"></div>
 
             <div class="chipbar" style="justify-content:flex-start">
-              <div class="chip"><b>Total Produção</b><span id="kpiProd" class="mono">R$ 0,00</span></div>
+              <div class="chip"><b>Total Diárias</b><span id="kpiProd" class="mono">R$ 0,00</span></div>
               <div class="chip"><b>Total Vales</b><span id="kpiVales" class="mono">R$ 0,00</span></div>
               <div class="chip"><b>A Receber</b><span id="kpiReceber" class="mono">R$ 0,00</span></div>
               <div class="chip"><b>Registros</b><span id="kpiRegs" class="mono">0</span></div>
@@ -596,7 +599,7 @@
             </div>
 
             <div class="hint small">
-              “Crédito” vem do check-in (dia todo/meio dia/falta). “Vale” é desconto. “Saldo” = Crédito - Vale.
+              “Crédito” vem da diária (dia todo/meio dia/falta). “Vale” é desconto. “Saldo” = Crédito - Vale.
             </div>
           </div>
         </section>
@@ -650,7 +653,7 @@
           </div>
 
           <div class="hint small">
-            Total de Diárias = soma do <b>Crédito</b> dos check-ins (dia todo/meio dia). Total de Dias: Dia Todo = 1 · Meio Dia = 0,5.
+            Total de Diárias = soma do <b>Crédito</b> das diárias. Total de Dias: Dia Todo = 1 · Meio Dia = 0,5.
           </div>
         </div>
       </section>
@@ -812,7 +815,7 @@
     </section>
   </div>
 
-  <!-- Footer (só na aba Frequência, pra manter seu comportamento) -->
+  <!-- Footer (só na aba Frequência - operacional) -->
   <div class="footerBar" id="footerBar">
     <div class="inner">
       <button class="btn primary" id="btnExportCSV">Exportar para CSV (Tudo)</button>
@@ -843,13 +846,13 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Coleções existentes
+  // Coleções existentes (mantidas)
   const colEmp = collection(db, "employees");
   const colObras = collection(db, "obras");
   const colCheckins = collection(db, "checkins");
   const colVales = collection(db, "vales");
 
-  // ✅ Novas coleções
+  // Coleções adicionais (mantidas)
   const colMateriais = collection(db, "materiais");
   const colAbastecimento = collection(db, "abastecimento");
 
@@ -861,11 +864,14 @@
   let materiais = [];
   let abastecimentos = [];
 
-  // ✅ guarda o último resultado do filtro (pra exportar “filtrado”)
+  // guarda o último resultado do filtro (pra exportar “filtrado”)
   let lastFiltered = [];
 
-  // ✅ modo edição funcionário
+  // modo edição funcionário
   let editingEmpId = null;
+
+  // modo operacional (diária/vale)
+  let opMode = "DIARIA"; // "DIARIA" | "VALE"
 
   const $ = (id) => document.getElementById(id);
   const ALL_VALUE = "__ALL__";
@@ -891,7 +897,7 @@
   };
 
   // ---------------------------
-  // ✅ CSV EXPORT (corrigido)
+  // CSV EXPORT (corrigido)
   // ---------------------------
   function csvEscape(value){
     const s = String(value ?? "");
@@ -969,9 +975,11 @@
     toast("CSV exportado!");
   }
 
+  // ---------------------------
   // SPA nav
+  // ---------------------------
   function showPage(pageId){
-    ["pageHome","pageFrequencia","pageMateriais","pageResumo"].forEach(id => $(id).classList.remove("show"));
+    ["pageHome","pageCadastro","pageFrequencia","pageMateriais","pageResumo"].forEach(id => $(id).classList.remove("show"));
     $(pageId).classList.add("show");
     $("footerBar").style.display = (pageId === "pageFrequencia") ? "block" : "none";
   }
@@ -981,9 +989,8 @@
     const today = toISODate(new Date());
     $("chipHoje").textContent = today;
 
-    // Frequência
-    $("ciData").value = today;
-    $("vlData").value = today;
+    // Operacional
+    $("opData").value = today;
 
     const now = new Date();
     $("rpIni").value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -1003,14 +1010,18 @@
     $("chipVales").textContent = vales.length;
   }
 
+  // ---------------------------
+  // Dropdowns (integração de dados)
+  // - Operacional puxa empregados do Cadastro (employees[])
+  // ---------------------------
   function rebuildDropdowns(){
-    // Frequência
-    $("ciFuncionario").innerHTML = "";
-    $("vlFuncionario").innerHTML = "";
-    $("rpFuncionario").innerHTML = "";
+    // Operacional
+    $("opFuncionario").innerHTML = "";
+    $("opObra").innerHTML = "";
+    $("opValeObra").innerHTML = "";
 
-    $("ciObra").innerHTML = "";
-    $("vlObra").innerHTML = "";
+    // Relatórios
+    $("rpFuncionario").innerHTML = "";
     $("rpObra").innerHTML = "";
 
     // Materiais
@@ -1018,37 +1029,35 @@
 
     // Funcionários
     $("rpFuncionario").add(new Option("Todos", ALL_VALUE));
-    $("ciFuncionario").add(new Option("Selecione...", ""));
-    $("vlFuncionario").add(new Option("Selecione...", ""));
+    $("opFuncionario").add(new Option("Selecione...", ""));
 
     employees
       .slice()
       .sort((a,b) => (a.nome||"").localeCompare(b.nome||""))
       .forEach(e => {
         const txt = `${e.nome} (${fmtBRL(e.diaria)})`;
-        $("ciFuncionario").add(new Option(txt, e.id));
-        $("vlFuncionario").add(new Option(txt, e.id));
+        $("opFuncionario").add(new Option(txt, e.id));
         $("rpFuncionario").add(new Option(e.nome, e.id));
       });
 
     // Obras
     $("rpObra").add(new Option("Todas", ALL_VALUE));
-    $("ciObra").add(new Option("Selecione...", ""));
-    $("vlObra").add(new Option("(Opcional) Nenhuma", ""));
+    $("opObra").add(new Option("Selecione...", ""));
+    $("opValeObra").add(new Option("(Opcional) Nenhuma", ""));
     $("mtObra").add(new Option("Selecione...", ""));
 
     obras
       .slice()
       .sort((a,b) => (a.nome||"").localeCompare(b.nome||""))
       .forEach(o => {
-        $("ciObra").add(new Option(o.nome, o.id));
-        $("vlObra").add(new Option(o.nome, o.id));
+        $("opObra").add(new Option(o.nome, o.id));
+        $("opValeObra").add(new Option(o.nome, o.id));
         $("rpObra").add(new Option(o.nome, o.id));
         $("mtObra").add(new Option(o.nome, o.id));
       });
   }
 
-  // ✅ Render lista funcionários + botão editar
+  // Render lista funcionários + botões editar/excluir
   function renderEmployeesTable(){
     const tbody = $("empBody");
     if (!tbody) return;
@@ -1066,6 +1075,7 @@
           <td class="mono">${e.pixKey || ""}</td>
           <td class="right">
             <button class="btn ghost" data-empedit="${e.id}">Editar</button>
+            <button class="btn ghost" data-empdel="${e.id}">Excluir</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1081,9 +1091,8 @@
       rebuildDropdowns();
       renderEmployeesTable();
       applyFilter();
-      // Se estiver editando e o doc sumiu, cancela modo edição
       if (editingEmpId && !employees.some(e => e.id === editingEmpId)) cancelEditEmployee();
-      renderResumo(); // mantém resumo atualizado se estiver na tela
+      renderResumo();
     });
 
     onSnapshot(colObras, (snap) => {
@@ -1120,16 +1129,15 @@
 
   // ---------------------------
   // ✅ VALIDAÇÃO DUPLICIDADE (LANÇAMENTOS)
-  // - Impede 2 CHECKIN (diária) no mesmo dia por funcionário
+  // - Impede 2 DIÁRIAS (CHECKIN) no mesmo dia por funcionário
   // - VALE pode repetir
   // ---------------------------
   function hasDuplicateDaily(empId, dataISO){
-    // trava por (empId + data) em CHECKIN
     return checkins.some(c => c.empId === empId && c.data === dataISO);
   }
 
   // ---------------------------
-  // CRUD - Frequência
+  // CADASTRO (CRUD funcionários/obras)
   // ---------------------------
   function normalizePixKey(s){
     return String(s || "").trim();
@@ -1172,12 +1180,7 @@
     }
 
     if (editingEmpId){
-      await updateDoc(doc(colEmp, editingEmpId), {
-        nome,
-        funcao,
-        diaria,
-        pixKey // ✅ novo campo (compatível: pode ser vazio)
-      });
+      await updateDoc(doc(colEmp, editingEmpId), { nome, funcao, diaria, pixKey });
       toast("Cadastro atualizado!");
       cancelEditEmployee();
       return;
@@ -1188,6 +1191,14 @@
     cancelEditEmployee();
   }
 
+  async function deleteEmployee(empId){
+    const emp = employees.find(e => e.id === empId);
+    const nome = emp?.nome || "este funcionário";
+    if (!confirm(`Deseja excluir ${nome}?\n\nObs.: Lançamentos antigos não serão apagados.`)) return;
+    await deleteDoc(doc(colEmp, empId));
+    toast("Funcionário excluído!");
+  }
+
   async function addObra(){
     const nome = $("obraNome").value.trim();
     if (!nome) return toast("Informe o nome da obra!");
@@ -1196,58 +1207,218 @@
     toast("Obra salva na nuvem!");
   }
 
-  async function saveCheckin(){
-    const empId = $("ciFuncionario").value;
-    const dataISO = $("ciData").value;
-    const status = $("stFaltou").classList.contains("active") ? "FALTOU" : "FOI";
+  // ---------------------------
+  // ✅ FREQUÊNCIA (Operacional)
+  // - Diária (CHECKIN) com trava de duplicidade
+  // - Vale (VALE) pode repetir
+  // ---------------------------
+  function setOpMode(mode){
+    opMode = mode;
+    $("opTipoDiaria").classList.toggle("active", mode === "DIARIA");
+    $("opTipoVale").classList.toggle("active", mode === "VALE");
+    $("wrapDiaria").style.display = (mode === "DIARIA") ? "block" : "none";
+    $("wrapVale").style.display   = (mode === "VALE")   ? "block" : "none";
+  }
+
+  function clearOperacionalForm(){
+    $("opFuncionario").value = "";
+    $("opObs").value = "";
+    $("opValeValor").value = "";
+    $("opValeObra").value = "";
+    $("opObra").value = "";
+    // status default "FOI"
+    $("stFoi").classList.add("active"); $("stFaltou").classList.remove("active");
+    $("opJornada").value = "DIA_TODO";
+    setOpMode("DIARIA");
+  }
+
+  async function saveOperacional(){
+    const empId = $("opFuncionario").value;
+    const dataISO = $("opData").value;
     const emp = employees.find(e => e.id === empId);
 
-    if (!empId || !dataISO) return toast("Preencha os campos!");
+    if (!empId || !dataISO) return toast("Preencha Funcionário e Data!");
     if (!emp) return toast("Funcionário inválido.");
 
-    // ✅ trava duplicidade de diária: 2 CHECKIN no mesmo dia para o mesmo funcionário
-    if (hasDuplicateDaily(empId, dataISO)){
-      alert("Duplicidade detectada: este funcionário já possui lançamento de Diária (Check-in) nesta data.");
+    const obs = $("opObs").value;
+
+    if (opMode === "DIARIA"){
+      const status = $("stFaltou").classList.contains("active") ? "FALTOU" : "FOI";
+
+      // ✅ trava duplicidade de diária
+      if (hasDuplicateDaily(empId, dataISO)){
+        alert("Duplicidade detectada: este funcionário já possui lançamento de Diária nesta data.");
+        return;
+      }
+
+      const jornada = (status === "FALTOU") ? "" : $("opJornada").value;
+      const diaria = emp?.diaria || 0;
+      const credito = (status === "FALTOU")
+        ? 0
+        : (jornada === "MEIO_DIA" ? diaria * 0.5 : diaria);
+
+      await addDoc(colCheckins, {
+        type: "CHECKIN",
+        empId,
+        data: dataISO,
+        status,
+        jornada,
+        obraId: status === "FALTOU" ? "" : $("opObra").value,
+        diaria,
+        credito,
+        obs
+      });
+
+      toast("Diária registrada!");
+      $("opObs").value = "";
       return;
     }
 
-    const jornada = (status === "FALTOU") ? "" : $("ciJornada").value;
-    const diaria = emp?.diaria || 0;
-    const credito = (status === "FALTOU")
-      ? 0
-      : (jornada === "MEIO_DIA" ? diaria * 0.5 : diaria);
+    // VALE
+    const valor = parseBRL($("opValeValor").value);
+    if (valor <= 0) return toast("Informe o valor do Vale!");
 
-    await addDoc(colCheckins, {
-      type: "CHECKIN",
-      empId,
-      data: dataISO,
-      status,
-      jornada,
-      obraId: status === "FALTOU" ? "" : $("ciObra").value,
-      diaria,
-      credito,
-      obs: $("ciObs").value
-    });
-
-    $("ciObs").value = "";
-    toast("Check-in sincronizado!");
-  }
-
-  async function saveVale(){
-    const valor = parseBRL($("vlValor").value);
-    if (!$("vlFuncionario").value || !$("vlData").value || valor <= 0) return toast("Dados inválidos!");
-
-    // ✅ VALE pode repetir no mesmo dia (sem trava)
     await addDoc(colVales, {
       type: "VALE",
-      empId: $("vlFuncionario").value,
-      data: $("vlData").value,
+      empId,
+      data: dataISO,
       valor,
-      obraId: $("vlObra").value,
-      obs: $("vlObs").value
+      obraId: $("opValeObra").value,
+      obs
     });
-    $("vlValor").value = ""; $("vlObs").value = "";
-    toast("Vale registrado na nuvem!");
+
+    toast("Vale registrado!");
+    $("opValeValor").value = "";
+    $("opObs").value = "";
+  }
+
+  // ---------------------------
+  // Relatórios Frequência
+  // ---------------------------
+  function applyFilter(){
+    const empFiltro = $("rpFuncionario").value;
+    const obraFiltro = $("rpObra").value;
+    const ini = $("rpIni").value;
+    const fim = $("rpFim").value;
+    const tipo = $("rpTipo").value;
+
+    const unificado = buildUnifiedAll();
+
+    const filtrados = unificado.filter(it => {
+      if (tipo === "CHECKIN" && it.type !== "CHECKIN") return false;
+      if (tipo === "VALE" && it.type !== "VALE") return false;
+
+      if (empFiltro !== ALL_VALUE && it.empId !== empFiltro) return false;
+      if (obraFiltro !== ALL_VALUE && it.obraId !== obraFiltro) return false;
+      if (ini && it.data < ini) return false;
+      if (fim && it.data > fim) return false;
+      return true;
+    }).sort((a,b) => (b.data||"").localeCompare(a.data||""));
+
+    lastFiltered = filtrados;
+    renderTable(filtrados);
+  }
+
+  function renderTable(items) {
+    const tbody = $("rpBody");
+    tbody.innerHTML = "";
+    let tCred = 0, tVal = 0;
+
+    items.forEach(it => {
+      const saldo = (it.credito || 0) - (it.valor || 0);
+      tCred += (it.credito || 0);
+      tVal += (it.valor || 0);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${it.type}</td>
+        <td class="mono">${it.data || "---"}</td>
+        <td>${employees.find(e=>e.id===it.empId)?.nome || "---"}</td>
+        <td>${obras.find(o=>o.id===it.obraId)?.nome || "---"}</td>
+        <td>${it.type === "VALE" ? "Vale" : (it.status || "---")}${it.jornada ? " / " + it.jornada : ""}</td>
+        <td class="right">${fmtBRL(it.diaria || 0)}</td>
+        <td class="right okText">${fmtBRL(it.credito || 0)}</td>
+        <td class="right dangerText">${fmtBRL(it.valor || 0)}</td>
+        <td class="right">${fmtBRL(saldo)}</td>
+        <td>${it.obs || ""}</td>
+        <td class="right"><button class="btn ghost" data-deltype="${it.type}" data-delid="${it.id}">Excluir</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    $("kpiProd").textContent = fmtBRL(tCred);
+    $("kpiVales").textContent = fmtBRL(tVal);
+    $("kpiReceber").textContent = fmtBRL(tCred - tVal);
+    $("kpiRegs").textContent = items.length;
+  }
+
+  async function deleteItem(type, id){
+    if(!confirm("Deseja excluir?")) return;
+    const collectionRef = type === "CHECKIN" ? colCheckins : colVales;
+    await deleteDoc(doc(collectionRef, id));
+    toast("Excluído!");
+  }
+
+  // ---------------------------
+  // RESUMO (Relatório Financeiro)
+  // ---------------------------
+  function fmtDias(n){
+    const x = Number(n || 0);
+    return x.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+  }
+
+  function renderResumo(){
+    const tbody = $("rsBody");
+    if (!tbody) return;
+
+    const ini = $("rsIni")?.value || "";
+    const fim = $("rsFim")?.value || "";
+    if (!ini || !fim) {
+      tbody.innerHTML = "";
+      return;
+    }
+
+    const valesNoPeriodo = vales.filter(v => v.data >= ini && v.data <= fim);
+    const checkinsNoPeriodo = checkins.filter(c => c.data >= ini && c.data <= fim);
+
+    const resumo = employees.map(emp => {
+      const cs = checkinsNoPeriodo.filter(c => c.empId === emp.id);
+      const vs = valesNoPeriodo.filter(v => v.empId === emp.id);
+
+      const totalDiarias = cs.reduce((acc,c)=> acc + Number(c.credito || 0), 0);
+      const totalVales = vs.reduce((acc,v)=> acc + Number(v.valor || 0), 0);
+
+      const totalDias = cs.reduce((acc,c)=>{
+        if (c.status !== "FOI") return acc;
+        return acc + (c.jornada === "MEIO_DIA" ? 0.5 : 1);
+      }, 0);
+
+      return {
+        nome: emp.nome || "",
+        funcao: emp.funcao || "",
+        totalDiarias,
+        totalVales,
+        totalDias,
+        liquido: totalDiarias - totalVales,
+        pixKey: emp.pixKey || ""
+      };
+    })
+    .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""));
+
+    tbody.innerHTML = "";
+    resumo.forEach(r => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.nome}</td>
+        <td>${r.funcao}</td>
+        <td class="right mono okText">${fmtBRL(r.totalDiarias)}</td>
+        <td class="right mono dangerText">${fmtBRL(r.totalVales)}</td>
+        <td class="right mono">${fmtDias(r.totalDias)}</td>
+        <td class="right mono"><b>${fmtBRL(r.liquido)}</b></td>
+        <td class="mono">${r.pixKey}</td>
+      `;
+      tbody.appendChild(tr);
+    });
   }
 
   // ---------------------------
@@ -1324,144 +1495,6 @@
     $("abData").value = toISODate(new Date());
   }
 
-  // ---------------------------
-  // Relatórios Frequência
-  // ---------------------------
-  function applyFilter(){
-    const empFiltro = $("rpFuncionario").value;
-    const obraFiltro = $("rpObra").value;
-    const ini = $("rpIni").value;
-    const fim = $("rpFim").value;
-    const tipo = $("rpTipo").value;
-
-    const unificado = buildUnifiedAll();
-
-    const filtrados = unificado.filter(it => {
-      if (tipo === "CHECKIN" && it.type !== "CHECKIN") return false;
-      if (tipo === "VALE" && it.type !== "VALE") return false;
-
-      if (empFiltro !== ALL_VALUE && it.empId !== empFiltro) return false;
-      if (obraFiltro !== ALL_VALUE && it.obraId !== obraFiltro) return false;
-      if (ini && it.data < ini) return false;
-      if (fim && it.data > fim) return false;
-      return true;
-    }).sort((a,b) => (b.data||"").localeCompare(a.data||""));
-
-    lastFiltered = filtrados;
-    renderTable(filtrados);
-  }
-
-  function renderTable(items) {
-    const tbody = $("rpBody");
-    tbody.innerHTML = "";
-    let tCred = 0, tVal = 0;
-
-    items.forEach(it => {
-      const saldo = (it.credito || 0) - (it.valor || 0);
-      tCred += (it.credito || 0);
-      tVal += (it.valor || 0);
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${it.type}</td>
-        <td class="mono">${it.data || "---"}</td>
-        <td>${employees.find(e=>e.id===it.empId)?.nome || "---"}</td>
-        <td>${obras.find(o=>o.id===it.obraId)?.nome || "---"}</td>
-        <td>${it.type === "VALE" ? "Vale" : (it.status || "---")}${it.jornada ? " / " + it.jornada : ""}</td>
-        <td class="right">${fmtBRL(it.diaria || 0)}</td>
-        <td class="right okText">${fmtBRL(it.credito || 0)}</td>
-        <td class="right dangerText">${fmtBRL(it.valor || 0)}</td>
-        <td class="right">${fmtBRL(saldo)}</td>
-        <td>${it.obs || ""}</td>
-        <td class="right"><button class="btn ghost" data-deltype="${it.type}" data-delid="${it.id}">Excluir</button></td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    $("kpiProd").textContent = fmtBRL(tCred);
-    $("kpiVales").textContent = fmtBRL(tVal);
-    $("kpiReceber").textContent = fmtBRL(tCred - tVal);
-    $("kpiRegs").textContent = items.length;
-  }
-
-  async function deleteItem(type, id){
-    if(!confirm("Deseja excluir?")) return;
-    const collectionRef = type === "CHECKIN" ? colCheckins : colVales;
-    await deleteDoc(doc(collectionRef, id));
-    toast("Excluído!");
-  }
-
-  // ---------------------------
-  // ✅ RESUMO (Relatório Financeiro)
-  // ---------------------------
-  function fmtDias(n){
-    const x = Number(n || 0);
-    // mostra 0,5 / 1,0 etc em pt-BR
-    return x.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 1 });
-  }
-
-  function renderResumo(){
-    const tbody = $("rsBody");
-    if (!tbody) return;
-
-    const ini = $("rsIni")?.value || "";
-    const fim = $("rsFim")?.value || "";
-    if (!ini || !fim) {
-      tbody.innerHTML = "";
-      return;
-    }
-
-    // Index de vales por emp
-    const valesNoPeriodo = vales.filter(v => v.data >= ini && v.data <= fim);
-
-    // Index de checkins por emp
-    const checkinsNoPeriodo = checkins.filter(c => c.data >= ini && c.data <= fim);
-
-    const resumo = employees.map(emp => {
-      const cs = checkinsNoPeriodo.filter(c => c.empId === emp.id);
-      const vs = valesNoPeriodo.filter(v => v.empId === emp.id);
-
-      const totalDiarias = cs.reduce((acc,c)=> acc + Number(c.credito || 0), 0);
-      const totalVales = vs.reduce((acc,v)=> acc + Number(v.valor || 0), 0);
-
-      const totalDias = cs.reduce((acc,c)=>{
-        if (c.status !== "FOI") return acc;
-        return acc + (c.jornada === "MEIO_DIA" ? 0.5 : 1);
-      }, 0);
-
-      const liquido = totalDiarias - totalVales;
-
-      return {
-        nome: emp.nome || "",
-        funcao: emp.funcao || "",
-        totalDiarias,
-        totalVales,
-        totalDias,
-        liquido,
-        pixKey: emp.pixKey || ""
-      };
-    })
-    .sort((a,b)=> (a.nome||"").localeCompare(b.nome||""));
-
-    tbody.innerHTML = "";
-    resumo.forEach(r => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.nome}</td>
-        <td>${r.funcao}</td>
-        <td class="right mono okText">${fmtBRL(r.totalDiarias)}</td>
-        <td class="right mono dangerText">${fmtBRL(r.totalVales)}</td>
-        <td class="right mono">${fmtDias(r.totalDias)}</td>
-        <td class="right mono"><b>${fmtBRL(r.liquido)}</b></td>
-        <td class="mono">${r.pixKey}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
-
-  // ---------------------------
-  // Relatório Materiais + Abastecimento
-  // ---------------------------
   function renderMateriaisTable(){
     const tbody = $("mtBody");
     if (!tbody) return;
@@ -1536,31 +1569,66 @@
   }
 
   // ---------------------------
+  // Reset (zera dados) - opcional/robusto
+  // ---------------------------
+  async function resetAll(){
+    const ok = confirm("ATENÇÃO: isso irá apagar TODOS os registros (funcionários, obras, diárias, vales, materiais e abastecimento).\n\nDeseja continuar?");
+    if (!ok) return;
+
+    // Apaga por snapshot atual (mais simples)
+    const tasks = [];
+    for (const e of employees) tasks.push(deleteDoc(doc(colEmp, e.id)));
+    for (const o of obras) tasks.push(deleteDoc(doc(colObras, o.id)));
+    for (const c of checkins) tasks.push(deleteDoc(doc(colCheckins, c.id)));
+    for (const v of vales) tasks.push(deleteDoc(doc(colVales, v.id)));
+    for (const m of materiais) tasks.push(deleteDoc(doc(colMateriais, m.id)));
+    for (const a of abastecimentos) tasks.push(deleteDoc(doc(colAbastecimento, a.id)));
+
+    await Promise.allSettled(tasks);
+    toast("Dados zerados!");
+  }
+
+  // ---------------------------
   // Eventos / Listeners
   // ---------------------------
-  // SPA
+  // SPA (menu)
+  $("goCadastro").onclick   = () => showPage("pageCadastro");
   $("goFrequencia").onclick = () => showPage("pageFrequencia");
   $("goMateriais").onclick  = () => showPage("pageMateriais");
   $("goResumo").onclick     = () => { showPage("pageResumo"); renderResumo(); };
 
+  $("backFromCadastro").onclick   = () => showPage("pageHome");
   $("backFromFrequencia").onclick = () => showPage("pageHome");
   $("backFromMateriais").onclick  = () => showPage("pageHome");
   $("backFromResumo").onclick     = () => showPage("pageHome");
 
-  // Frequência
+  // Cadastro
   $("btnAddEmp").onclick = addOrUpdateEmployee;
-  $("btnAddObra").onclick = addObra;
-  $("btnSalvarCheckin").onclick = saveCheckin;
-  $("btnSalvarVale").onclick = saveVale;
-  $("btnAplicarFiltro").onclick = applyFilter;
-
   $("btnLimpaEmp").onclick = cancelEditEmployee;
+  $("btnAddObra").onclick = addObra;
   $("btnLimpaObra").onclick = () => { $("obraNome").value=""; };
-  $("btnLimpaCheckin").onclick = () => { $("ciObs").value=""; };
-  $("btnLimpaVale").onclick = () => { $("vlValor").value=""; $("vlObs").value=""; };
+
+  // Operacional (Frequência)
+  $("opTipoDiaria").onclick = () => setOpMode("DIARIA");
+  $("opTipoVale").onclick   = () => setOpMode("VALE");
 
   $("stFoi").onclick = () => { $("stFoi").classList.add("active"); $("stFaltou").classList.remove("active"); };
   $("stFaltou").onclick = () => { $("stFaltou").classList.add("active"); $("stFoi").classList.remove("active"); };
+
+  $("btnSalvarOperacional").onclick = saveOperacional;
+  $("btnLimpaOperacional").onclick = clearOperacionalForm;
+
+  // Relatórios
+  $("btnAplicarFiltro").onclick = applyFilter;
+  $("btnLimparFiltro").onclick = () => {
+    $("rpFuncionario").value = ALL_VALUE;
+    $("rpObra").value = ALL_VALUE;
+    const now = new Date();
+    $("rpIni").value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+    $("rpFim").value = toISODate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    $("rpTipo").value = "AMBOS";
+    applyFilter();
+  };
 
   // Resumo
   $("btnGerarResumo").onclick = renderResumo;
@@ -1581,23 +1649,25 @@
   $("btnLimpaMaterial").onclick = clearMaterialForm;
   $("btnLimpaAbastecimento").onclick = clearAbastecimentoForm;
 
-  // ✅ Exportações CSV
+  // Exportações CSV (na tela Frequência)
   $("btnExportCSV").onclick = () => {
     const all = buildUnifiedAll();
     const hoje = toISODate(new Date());
     exportCSV(all, `frequencia_tudo_${hoje}.csv`);
   };
-
   $("btnExportCSVFiltrado").onclick = () => {
     const hoje = toISODate(new Date());
     exportCSV(lastFiltered, `frequencia_filtrado_${hoje}.csv`);
   };
 
+  // Reset
+  $("btnReset").onclick = resetAll;
+
   // Delegação de eventos (excluir/editar)
   document.addEventListener("click", async (ev) => {
     const t = ev.target;
 
-    // Excluir (Frequência)
+    // Excluir (Relatórios / Frequência)
     if (t?.matches?.("button[data-deltype]")){
       const type = t.getAttribute("data-deltype");
       const id = t.getAttribute("data-delid");
@@ -1611,10 +1681,16 @@
       await deleteMaterialOuAbastecimento(col, id);
     }
 
-    // ✅ Editar Funcionário
+    // Editar Funcionário (Cadastro)
     if (t?.matches?.("button[data-empedit]")){
       const empId = t.getAttribute("data-empedit");
       startEditEmployee(empId);
+    }
+
+    // Excluir Funcionário (Cadastro)
+    if (t?.matches?.("button[data-empdel]")){
+      const empId = t.getAttribute("data-empdel");
+      await deleteEmployee(empId);
     }
   });
 
@@ -1623,6 +1699,7 @@
   // ---------------------------
   initDates();
   startSync();
+  setOpMode("DIARIA");
   showPage("pageHome");
 </script>
 </body>
